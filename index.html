@@ -1,3 +1,27 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#16302A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Budget">
+<title>Maandbudget</title>
+<style>
+  html { background: #F1F8F4; }
+  body {
+    margin: 0;
+    padding: 0;
+    background: #F1F8F4;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+</style>
+</head>
+<body>
 <div id="app-root">
   <style>
     #app-root {
@@ -19,7 +43,8 @@
       background: var(--paper);
       max-width: 480px;
       margin: 0 auto;
-      padding: 18px 16px 40px;
+      padding: calc(18px + env(safe-area-inset-top, 0px)) 16px calc(48px + env(safe-area-inset-bottom, 0px));
+      min-height: 100dvh;
       -webkit-text-size-adjust: 100%;
       box-sizing: border-box;
     }
@@ -792,3 +817,6 @@
   load().then(renderAll)['catch'](renderAll);
 })();
 </script>
+
+</body>
+</html>
