@@ -1,0 +1,794 @@
+<div id="app-root">
+  <style>
+    #app-root {
+      --paper: #F1F8F4;
+      --card: #FFFFFF;
+      --ink: #12211A;
+      --muted: #66756C;
+      --line: #E0EAE4;
+      --pine: #16302A;
+      --pine-soft: #2C4C42;
+      --pale: #E4F3EA;
+      --clay: #E4795E;
+      --gold: #8A6B1F;
+      --sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+
+      font-family: var(--sans);
+      color: var(--ink);
+      background: var(--paper);
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 18px 16px 40px;
+      -webkit-text-size-adjust: 100%;
+      box-sizing: border-box;
+    }
+    #app-root *, #app-root *::before, #app-root *::after { box-sizing: border-box; }
+
+    #app-root :focus-visible {
+      outline: 2px solid var(--pine);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    /* ---------- kopvlak ---------- */
+    .hero {
+      background: var(--pine);
+      color: #EAF1EA;
+      border-radius: 16px;
+      padding: 22px 20px 18px;
+    }
+    .hero-label {
+      font-size: 13px;
+      letter-spacing: .01em;
+      color: #A9C0B4;
+      margin: 0 0 6px;
+    }
+    .hero-amount {
+      font-family: var(--serif);
+      font-size: 52px;
+      line-height: 1;
+      font-weight: 400;
+      letter-spacing: -.015em;
+      margin: 0;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    .hero-amount.negative { color: var(--clay); }
+    .hero-sub {
+      font-size: 13.5px;
+      color: #A9C0B4;
+      margin: 10px 0 0;
+    }
+    .hero-sub b { color: #EAF1EA; font-weight: 600; }
+
+    .strip { margin-top: 18px; }
+    .strip-track {
+      position: relative;
+      height: 3px;
+      background: #2C4C42;
+      border-radius: 2px;
+    }
+    .strip-fill {
+      position: absolute; inset: 0 auto 0 0;
+      background: #7FA894;
+      border-radius: 2px;
+    }
+    .strip-dot {
+      position: absolute;
+      top: 50%;
+      width: 11px; height: 11px;
+      margin-left: -5.5px;
+      transform: translateY(-50%);
+      border-radius: 50%;
+      background: #EAF1EA;
+      border: 2px solid var(--pine);
+    }
+    .strip-ends {
+      display: flex; justify-content: space-between;
+      font-size: 11.5px; color: #8CA79A;
+      margin-top: 8px;
+    }
+
+    /* ---------- secties ---------- */
+    .section { margin-top: 26px; }
+    .section-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 10px; margin-bottom: 10px;
+    }
+    .section-title {
+      font-size: 15px; font-weight: 650; margin: 0; letter-spacing: -.005em;
+    }
+    .section-note { font-size: 12.5px; color: var(--muted); }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(18, 33, 26, .04);
+    }
+
+    /* ---------- rekeningen ---------- */
+    .acc {
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .acc:last-child { border-bottom: 0; }
+    .acc input {
+      font: inherit; font-size: 16px; color: var(--ink);
+      border: 0; background: transparent; padding: 4px 2px;
+      min-width: 0;
+    }
+    .acc .acc-name { flex: 1 1 auto; }
+    .acc .acc-amt {
+      flex: 0 0 108px; text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+    .acc input::placeholder { color: #A8B7AD; font-weight: 400; }
+    .acc-total {
+      display: flex; justify-content: space-between;
+      padding: 10px 12px;
+      background: var(--pale);
+      font-size: 14px; font-weight: 650;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ---------- vaste lasten ---------- */
+    .bill {
+      display: flex; align-items: center; gap: 11px;
+      width: 100%;
+      padding: 11px 12px;
+      border: 0; border-bottom: 1px solid var(--line);
+      background: transparent;
+      font: inherit; text-align: left;
+      color: var(--ink);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .bill:last-child { border-bottom: 0; }
+    .bill:active { background: var(--pale); }
+    .mark {
+      flex: 0 0 20px; height: 20px;
+      border: 1.5px solid #C4D6CB;
+      border-radius: 6px;
+      display: grid; place-items: center;
+      font-size: 12px; line-height: 1;
+      color: transparent;
+    }
+    .bill.done .mark {
+      background: var(--pine); border-color: var(--pine); color: #EAF1EA;
+    }
+    .bill-name {
+      flex: 1 1 auto; font-size: 15.5px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .bill-amt {
+      flex: 0 0 auto; font-size: 15.5px; font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .bill.done .bill-name, .bill.done .bill-amt {
+      color: #9DB0A4; text-decoration: line-through;
+    }
+
+    .empty {
+      padding: 18px 14px; font-size: 14px; color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* ---------- bewerkstand ---------- */
+    .edit-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 12px 6px 6px;
+      border-bottom: 1px solid var(--line);
+    }
+    .edit-row:last-child { border-bottom: 0; }
+    .edit-num {
+      flex: 0 0 26px; text-align: right;
+      font-size: 11px; color: #AEBDB3;
+      font-variant-numeric: tabular-nums;
+    }
+    .edit-row input {
+      font: inherit; font-size: 16px; color: var(--ink);
+      border: 0; border-bottom: 1px solid transparent;
+      background: transparent; padding: 5px 2px; min-width: 0;
+    }
+    .edit-row input:focus { border-bottom-color: var(--pine); outline: none; }
+    .edit-row .e-desc { flex: 1 1 auto; }
+    .edit-row .e-amt {
+      flex: 0 0 96px; text-align: right;
+      font-variant-numeric: tabular-nums; font-weight: 600;
+    }
+    .edit-row input::placeholder { color: #B5C4BA; font-weight: 400; }
+
+    /* ---------- knoppen ---------- */
+    .btn {
+      font: inherit; font-size: 13.5px; font-weight: 600;
+      padding: 7px 13px;
+      border-radius: 999px;
+      border: 1px solid var(--pine);
+      background: transparent; color: var(--pine);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn.solid { background: var(--pine); color: #EAF1EA; }
+    .btn.ghost { border-color: var(--line); color: var(--muted); }
+    .btn:active { transform: translateY(1px); }
+
+    .totals {
+      display: flex; justify-content: space-between;
+      padding: 11px 12px;
+      background: var(--pale);
+      font-size: 13.5px;
+      font-variant-numeric: tabular-nums;
+    }
+    .totals span:last-child { font-weight: 650; }
+
+    .footer { margin-top: 30px; }
+    .reset-confirm {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .reset-confirm p { margin: 0 0 12px; font-size: 14px; line-height: 1.5; }
+    .reset-actions { display: flex; gap: 8px; }
+
+    .saved {
+      font-size: 12px; color: var(--muted);
+      text-align: center; margin-top: 16px; min-height: 16px;
+    }
+
+    .bk-text {
+      width: 100%;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 12px; line-height: 1.45;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px;
+      background: #FAFDFB;
+      resize: vertical;
+      margin-bottom: 10px;
+    }
+    .bk-hint { font-size: 12.5px; color: var(--muted); margin: 0 0 10px; line-height: 1.5; }
+    .bk-hint.warn { color: #A23E2C; }
+
+    @media (prefers-reduced-motion: reduce) {
+      #app-root * { transition: none !important; }
+    }
+  </style>
+
+  <div class="hero">
+    <p class="hero-label" id="heroLabel">nog te besteden</p>
+    <p class="hero-amount" id="heroAmount">€ 0,00</p>
+    <p class="hero-sub" id="heroSub"></p>
+    <div class="strip">
+      <div class="strip-track">
+        <div class="strip-fill" id="stripFill"></div>
+        <div class="strip-dot" id="stripDot"></div>
+      </div>
+      <div class="strip-ends">
+        <span id="stripStart"></span>
+        <span id="stripEnd"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <h2 class="section-title">Saldo op je rekeningen</h2>
+    </div>
+    <div class="panel">
+      <div id="accounts"></div>
+      <div class="acc-total">
+        <span>Totaal</span>
+        <span id="accTotal">€ 0,00</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <h2 class="section-title">Vaste lasten</h2>
+      <button class="btn ghost" id="editToggle">Bewerken</button>
+    </div>
+    <div class="section-note" id="billNote" style="margin-bottom:10px"></div>
+    <div class="panel" id="bills"></div>
+    <div class="panel" style="margin-top:10px">
+      <div class="totals"><span>Al afgeschreven</span><span id="paidTotal">€ 0,00</span></div>
+      <div class="totals" style="background:transparent;border-top:1px solid var(--line)">
+        <span>Nog af te schrijven</span><span id="openTotal">€ 0,00</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer" id="footer"></div>
+  <div class="section" id="backup"></div>
+  <p class="saved" id="saved"></p>
+</div>
+
+<script>
+(function () {
+  var KEY = 'maandbudget-v1';
+  var SALARY_DAY = 23;
+  var ACC_COUNT = 4;
+  var BILL_COUNT = 50;
+
+  var state = {
+    accounts: Array.from({ length: ACC_COUNT }, function () { return { name: '', amount: '' }; }),
+    bills: Array.from({ length: BILL_COUNT }, function () { return { desc: '', amount: '', paid: false }; }),
+    lastReset: null
+  };
+  var editing = false;
+  var confirming = false;
+  var backupMode = null;
+  var saveTimer = null;
+
+  var eur = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' });
+  var eur0 = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+  var dayMonth = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'long' });
+  var dayMonthShort = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'short' });
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  function num(v) {
+    if (typeof v === 'number') return isFinite(v) ? v : 0;
+    if (!v) return 0;
+    var s = String(v).replace(/[^0-9,.\-]/g, '');
+    if (s.indexOf(',') > -1) s = s.replace(/\./g, '').replace(',', '.');
+    var n = parseFloat(s);
+    return isFinite(n) ? n : 0;
+  }
+
+  /* ---------- salarisdata ---------- */
+  function periodDates() {
+    var now = new Date();
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var next, prev;
+    if (today.getDate() < SALARY_DAY) {
+      next = new Date(today.getFullYear(), today.getMonth(), SALARY_DAY);
+      prev = new Date(today.getFullYear(), today.getMonth() - 1, SALARY_DAY);
+    } else {
+      next = new Date(today.getFullYear(), today.getMonth() + 1, SALARY_DAY);
+      prev = new Date(today.getFullYear(), today.getMonth(), SALARY_DAY);
+    }
+    var day = 86400000;
+    return {
+      today: today,
+      next: next,
+      prev: prev,
+      daysLeft: Math.round((next - today) / day),
+      progress: Math.min(1, Math.max(0, (today - prev) / (next - prev)))
+    };
+  }
+
+  /* ---------- opslag ---------- */
+  function flash(msg) {
+    $('saved').textContent = msg;
+    clearTimeout(flash.t);
+    flash.t = setTimeout(function () { $('saved').textContent = ''; }, 1600);
+  }
+
+  function localSet(json) {
+    try { window.localStorage.setItem(KEY, json); return true; } catch (e) { return false; }
+  }
+  function localGet() {
+    try { return window.localStorage.getItem(KEY); } catch (e) { return null; }
+  }
+
+  function save(quiet) {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () {
+      var json = JSON.stringify(state);
+      var ok = localSet(json);
+      if (window.storage) {
+        try {
+          window.storage.set(KEY, json).then(function () {
+            if (!quiet) flash('Opgeslagen');
+          })['catch'](function () { if (!ok) flash('Opslaan lukte niet'); });
+          return;
+        } catch (e) { /* val terug op de browser */ }
+      }
+      if (!quiet) flash(ok ? 'Opgeslagen' : 'Opslaan lukte niet');
+    }, 350);
+  }
+
+  function apply(json) {
+    if (!json) return false;
+    var d = JSON.parse(json);
+    if (Array.isArray(d.accounts)) {
+      for (var i = 0; i < ACC_COUNT; i++) if (d.accounts[i]) state.accounts[i] = d.accounts[i];
+    }
+    if (Array.isArray(d.bills)) {
+      for (var j = 0; j < BILL_COUNT; j++) if (d.bills[j]) state.bills[j] = d.bills[j];
+    }
+    state.lastReset = d.lastReset || null;
+    return true;
+  }
+
+  function load() {
+    if (window.storage) {
+      return window.storage.get(KEY).then(function (r) {
+        if (!(r && r.value && apply(r.value))) apply(localGet());
+      })['catch'](function () { try { apply(localGet()); } catch (e) {} });
+    }
+    try { apply(localGet()); } catch (e) {}
+    return Promise.resolve();
+  }
+
+  /* ---------- berekening ---------- */
+  function sums() {
+    var saldo = 0, open = 0, paid = 0, filled = 0, done = 0;
+    state.accounts.forEach(function (a) { saldo += num(a.amount); });
+    state.bills.forEach(function (b) {
+      var amt = num(b.amount);
+      var used = b.desc.trim() !== '' || amt !== 0;
+      if (!used) return;
+      filled++;
+      if (b.paid) { paid += amt; done++; } else { open += amt; }
+    });
+    return { saldo: saldo, open: open, paid: paid, filled: filled, done: done, rest: saldo - open };
+  }
+
+  /* ---------- weergave ---------- */
+  function renderHero() {
+    var s = sums(), p = periodDates();
+    $('heroLabel').textContent = 'nog te besteden tot ' + dayMonth.format(p.next);
+    var el = $('heroAmount');
+    el.textContent = eur.format(s.rest);
+    el.classList.toggle('negative', s.rest < 0);
+
+    var perDay = p.daysLeft > 0 ? s.rest / p.daysLeft : s.rest;
+    var dagen = p.daysLeft === 1 ? '1 dag' : p.daysLeft + ' dagen';
+    if (s.rest < 0) {
+      $('heroSub').innerHTML = 'Je komt <b>' + eur.format(Math.abs(s.rest)) + '</b> tekort · nog ' + dagen;
+    } else {
+      $('heroSub').innerHTML = 'Nog <b>' + dagen + '</b> · dat is ' + eur0.format(perDay) + ' per dag';
+    }
+
+    $('stripFill').style.width = (p.progress * 100) + '%';
+    $('stripDot').style.left = (p.progress * 100) + '%';
+    $('stripStart').textContent = dayMonthShort.format(p.prev);
+    $('stripEnd').textContent = dayMonthShort.format(p.next);
+
+    $('accTotal').textContent = eur.format(s.saldo);
+    $('paidTotal').textContent = eur.format(s.paid);
+    $('openTotal').textContent = eur.format(s.open);
+    $('billNote').textContent = s.filled === 0
+      ? ''
+      : s.done + ' van ' + s.filled + ' afgeschreven';
+  }
+
+  function renderAccounts() {
+    var wrap = $('accounts');
+    wrap.textContent = '';
+    state.accounts.forEach(function (a, i) {
+      var row = document.createElement('div');
+      row.className = 'acc';
+
+      var name = document.createElement('input');
+      name.className = 'acc-name';
+      name.type = 'text';
+      name.value = a.name;
+      name.placeholder = 'Rekening ' + (i + 1);
+      name.setAttribute('aria-label', 'Naam rekening ' + (i + 1));
+      name.addEventListener('input', function () { a.name = name.value; save(true); });
+
+      var amt = document.createElement('input');
+      amt.className = 'acc-amt';
+      amt.type = 'text';
+      amt.inputMode = 'decimal';
+      amt.value = a.amount;
+      amt.placeholder = '0,00';
+      amt.setAttribute('aria-label', 'Saldo rekening ' + (i + 1));
+      amt.addEventListener('input', function () { a.amount = amt.value; renderHero(); save(true); });
+      amt.addEventListener('blur', function () {
+        if (amt.value.trim() !== '') {
+          a.amount = num(amt.value).toFixed(2).replace('.', ',');
+          amt.value = a.amount;
+          save(true);
+        }
+      });
+
+      row.appendChild(name);
+      row.appendChild(amt);
+      wrap.appendChild(row);
+    });
+  }
+
+  function renderBills() {
+    var wrap = $('bills');
+    wrap.textContent = '';
+
+    if (editing) {
+      state.bills.forEach(function (b, i) {
+        var row = document.createElement('div');
+        row.className = 'edit-row';
+
+        var n = document.createElement('span');
+        n.className = 'edit-num';
+        n.textContent = i + 1;
+
+        var desc = document.createElement('input');
+        desc.className = 'e-desc';
+        desc.type = 'text';
+        desc.value = b.desc;
+        desc.placeholder = 'Omschrijving';
+        desc.setAttribute('aria-label', 'Omschrijving regel ' + (i + 1));
+        desc.addEventListener('input', function () { b.desc = desc.value; save(true); });
+
+        var amt = document.createElement('input');
+        amt.className = 'e-amt';
+        amt.type = 'text';
+        amt.inputMode = 'decimal';
+        amt.value = b.amount;
+        amt.placeholder = '0,00';
+        amt.setAttribute('aria-label', 'Bedrag regel ' + (i + 1));
+        amt.addEventListener('input', function () { b.amount = amt.value; renderHero(); save(true); });
+        amt.addEventListener('blur', function () {
+          if (amt.value.trim() !== '') {
+            b.amount = num(amt.value).toFixed(2).replace('.', ',');
+            amt.value = b.amount;
+            save(true);
+          }
+        });
+
+        row.appendChild(n);
+        row.appendChild(desc);
+        row.appendChild(amt);
+        wrap.appendChild(row);
+      });
+      return;
+    }
+
+    var any = false;
+    state.bills.forEach(function (b, i) {
+      if (b.desc.trim() === '' && num(b.amount) === 0) return;
+      any = true;
+      var row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'bill' + (b.paid ? ' done' : '');
+      row.setAttribute('aria-pressed', b.paid ? 'true' : 'false');
+
+      var mark = document.createElement('span');
+      mark.className = 'mark';
+      mark.textContent = '✓';
+
+      var name = document.createElement('span');
+      name.className = 'bill-name';
+      name.textContent = b.desc.trim() || 'Regel ' + (i + 1);
+
+      var amt = document.createElement('span');
+      amt.className = 'bill-amt';
+      amt.textContent = eur.format(num(b.amount));
+
+      row.appendChild(mark);
+      row.appendChild(name);
+      row.appendChild(amt);
+      row.addEventListener('click', function () {
+        b.paid = !b.paid;
+        row.classList.toggle('done', b.paid);
+        row.setAttribute('aria-pressed', b.paid ? 'true' : 'false');
+        renderHero();
+        save(true);
+      });
+      wrap.appendChild(row);
+    });
+
+    if (!any) {
+      var e = document.createElement('p');
+      e.className = 'empty';
+      e.textContent = 'Nog geen vaste lasten. Tik op Bewerken en vul je huur, verzekeringen en abonnementen in — daarna tik je hier elke maand aan wat al is afgeschreven.';
+      wrap.appendChild(e);
+    }
+  }
+
+  function renderFooter() {
+    var f = $('footer');
+    f.textContent = '';
+
+    if (!confirming) {
+      var b = document.createElement('button');
+      b.className = 'btn solid';
+      b.style.width = '100%';
+      b.style.padding = '13px';
+      b.style.fontSize = '15px';
+      b.textContent = 'Nieuwe maand starten';
+      b.addEventListener('click', function () { confirming = true; renderFooter(); });
+      f.appendChild(b);
+
+      if (state.lastReset) {
+        var p = document.createElement('p');
+        p.className = 'saved';
+        p.style.marginTop = '10px';
+        p.textContent = 'Laatste keer gestart op ' + new Date(state.lastReset).toLocaleDateString('nl-NL');
+        f.appendChild(p);
+      }
+      return;
+    }
+
+    var box = document.createElement('div');
+    box.className = 'reset-confirm';
+    var p = document.createElement('p');
+    p.textContent = 'Alle vinkjes worden gewist, zodat je de maand opnieuw kunt aftikken. Je omschrijvingen, bedragen en saldi blijven staan.';
+    var acts = document.createElement('div');
+    acts.className = 'reset-actions';
+
+    var yes = document.createElement('button');
+    yes.className = 'btn solid';
+    yes.textContent = 'Vinkjes wissen';
+    yes.addEventListener('click', function () {
+      state.bills.forEach(function (b) { b.paid = false; });
+      state.lastReset = new Date().toISOString();
+      confirming = false;
+      renderAll();
+      save();
+      flash('Nieuwe maand gestart');
+    });
+
+    var no = document.createElement('button');
+    no.className = 'btn ghost';
+    no.textContent = 'Annuleren';
+    no.addEventListener('click', function () { confirming = false; renderFooter(); });
+
+    acts.appendChild(yes);
+    acts.appendChild(no);
+    box.appendChild(p);
+    box.appendChild(acts);
+    f.appendChild(box);
+  }
+
+  function renderBackup() {
+    var c = $('backup');
+    c.textContent = '';
+
+    var head = document.createElement('div');
+    head.className = 'section-head';
+    var h = document.createElement('h2');
+    h.className = 'section-title';
+    h.textContent = 'Back-up';
+    head.appendChild(h);
+    c.appendChild(head);
+
+    var note = document.createElement('p');
+    note.className = 'section-note';
+    note.style.margin = '0 0 10px';
+    note.textContent = 'Bewaar je gegevens als tekst in je notities. Daarmee zet je alles terug op een nieuwe telefoon of na het opschonen van je browser.';
+    c.appendChild(note);
+
+    var panel = document.createElement('div');
+    panel.className = 'panel';
+    panel.style.padding = '12px';
+
+    if (backupMode === 'export') {
+      var hint = document.createElement('p');
+      hint.className = 'bk-hint';
+      hint.textContent = 'Selecteer de hele tekst en kopieer hem naar een notitie. Deel deze tekst met niemand: je bedragen staan erin.';
+      var ta = document.createElement('textarea');
+      ta.className = 'bk-text';
+      ta.rows = 5;
+      ta.readOnly = true;
+      ta.value = JSON.stringify(state);
+      ta.setAttribute('aria-label', 'Back-uptekst');
+      panel.appendChild(hint);
+      panel.appendChild(ta);
+
+      var eActs = document.createElement('div');
+      eActs.className = 'reset-actions';
+      var copy = document.createElement('button');
+      copy.className = 'btn solid';
+      copy.textContent = 'Kopieer tekst';
+      copy.addEventListener('click', function () {
+        ta.focus();
+        ta.setSelectionRange(0, ta.value.length);
+        var done = false;
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(ta.value);
+            done = true;
+          } else {
+            done = document.execCommand('copy');
+          }
+        } catch (e) { done = false; }
+        flash(done ? 'Gekopieerd' : 'Kopieer de tekst handmatig');
+      });
+      var eClose = document.createElement('button');
+      eClose.className = 'btn ghost';
+      eClose.textContent = 'Sluiten';
+      eClose.addEventListener('click', function () { backupMode = null; renderBackup(); });
+      eActs.appendChild(copy);
+      eActs.appendChild(eClose);
+      panel.appendChild(eActs);
+
+    } else if (backupMode === 'import') {
+      var iHint = document.createElement('p');
+      iHint.className = 'bk-hint';
+      iHint.textContent = 'Plak hier je bewaarde back-uptekst. Wat er nu in de app staat, wordt daarmee overschreven.';
+      var ita = document.createElement('textarea');
+      ita.className = 'bk-text';
+      ita.rows = 5;
+      ita.placeholder = 'Plak hier je back-up';
+      ita.setAttribute('aria-label', 'Back-up terugzetten');
+      var err = document.createElement('p');
+      err.className = 'bk-hint warn';
+      err.style.display = 'none';
+
+      var iActs = document.createElement('div');
+      iActs.className = 'reset-actions';
+      var put = document.createElement('button');
+      put.className = 'btn solid';
+      put.textContent = 'Terugzetten';
+      put.addEventListener('click', function () {
+        var txt = ita.value.trim();
+        if (!txt) { err.textContent = 'Er is nog niets geplakt.'; err.style.display = 'block'; return; }
+        var d;
+        try { d = JSON.parse(txt); } catch (e) { d = null; }
+        if (!d || (!Array.isArray(d.accounts) && !Array.isArray(d.bills))) {
+          err.textContent = 'Deze tekst is geen geldige back-up. Plak de hele tekst, inclusief de accolades aan begin en eind.';
+          err.style.display = 'block';
+          return;
+        }
+        state.accounts = Array.from({ length: ACC_COUNT }, function () { return { name: '', amount: '' }; });
+        state.bills = Array.from({ length: BILL_COUNT }, function () { return { desc: '', amount: '', paid: false }; });
+        apply(txt);
+        backupMode = null;
+        editing = false;
+        $('editToggle').textContent = 'Bewerken';
+        $('editToggle').className = 'btn ghost';
+        renderAll();
+        save();
+        flash('Back-up teruggezet');
+      });
+      var iClose = document.createElement('button');
+      iClose.className = 'btn ghost';
+      iClose.textContent = 'Annuleren';
+      iClose.addEventListener('click', function () { backupMode = null; renderBackup(); });
+      iActs.appendChild(put);
+      iActs.appendChild(iClose);
+
+      panel.appendChild(iHint);
+      panel.appendChild(ita);
+      panel.appendChild(err);
+      panel.appendChild(iActs);
+
+    } else {
+      var acts = document.createElement('div');
+      acts.className = 'reset-actions';
+      var out = document.createElement('button');
+      out.className = 'btn';
+      out.textContent = 'Back-up maken';
+      out.addEventListener('click', function () { backupMode = 'export'; renderBackup(); });
+      var inn = document.createElement('button');
+      inn.className = 'btn ghost';
+      inn.textContent = 'Back-up terugzetten';
+      inn.addEventListener('click', function () { backupMode = 'import'; renderBackup(); });
+      acts.appendChild(out);
+      acts.appendChild(inn);
+      panel.appendChild(acts);
+    }
+
+    c.appendChild(panel);
+  }
+
+  function renderAll() {
+    renderHero();
+    renderAccounts();
+    renderBills();
+    renderFooter();
+    renderBackup();
+  }
+
+  $('editToggle').addEventListener('click', function () {
+    editing = !editing;
+    $('editToggle').textContent = editing ? 'Klaar' : 'Bewerken';
+    $('editToggle').className = editing ? 'btn' : 'btn ghost';
+    renderBills();
+    renderHero();
+    if (!editing) save();
+  });
+
+  load().then(renderAll)['catch'](renderAll);
+})();
+</script>
