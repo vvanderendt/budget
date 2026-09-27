@@ -12,13 +12,7 @@
 <title>Maandbudget</title>
 <style>
   html { background: #F1F8F4; }
-  body {
-    margin: 0;
-    padding: 0;
-    background: #F1F8F4;
-    min-height: 100vh;
-    min-height: 100dvh;
-  }
+  body { margin: 0; padding: 0; background: #F1F8F4; min-height: 100vh; min-height: 100dvh; }
 </style>
 </head>
 <body>
@@ -34,7 +28,6 @@
       --pine-soft: #2C4C42;
       --pale: #E4F3EA;
       --clay: #E4795E;
-      --gold: #8A6B1F;
       --sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
       --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
 
@@ -43,7 +36,7 @@
       background: var(--paper);
       max-width: 480px;
       margin: 0 auto;
-      padding: calc(18px + env(safe-area-inset-top, 0px)) 16px calc(48px + env(safe-area-inset-bottom, 0px));
+      padding: calc(18px + env(safe-area-inset-top, 0px)) 16px calc(32px + env(safe-area-inset-bottom, 0px));
       min-height: 100dvh;
       -webkit-text-size-adjust: 100%;
       box-sizing: border-box;
@@ -113,17 +106,26 @@
       font-size: 11.5px; color: #8CA79A;
       margin-top: 8px;
     }
+    .hero-updated {
+      margin: 17px 0 0;
+      padding-top: 14px;
+      border-top: 1px solid #2C4C42;
+      font-size: 12.5px;
+      line-height: 1.45;
+      color: #A9C0B4;
+    }
+    .hero-updated b { color: #EAF1EA; font-weight: 600; }
 
     /* ---------- secties ---------- */
     .section { margin-top: 26px; }
     .section-head {
-      display: flex; align-items: baseline; justify-content: space-between;
+      display: flex; align-items: center; justify-content: space-between;
       gap: 10px; margin-bottom: 10px;
     }
     .section-title {
       font-size: 15px; font-weight: 650; margin: 0; letter-spacing: -.005em;
     }
-    .section-note { font-size: 12.5px; color: var(--muted); }
+    .section-note { font-size: 12.5px; color: var(--muted); margin: 0 0 10px; }
 
     .panel {
       background: var(--card);
@@ -160,7 +162,7 @@
       font-variant-numeric: tabular-nums;
     }
 
-    /* ---------- vaste lasten ---------- */
+    /* ---------- lastenregels ---------- */
     .bill {
       display: flex; align-items: center; gap: 11px;
       width: 100%;
@@ -196,10 +198,24 @@
     .bill.done .bill-name, .bill.done .bill-amt {
       color: #9DB0A4; text-decoration: line-through;
     }
+    .bill.parked { background: #F6F9F7; }
+    .bill.parked .mark {
+      border-style: dashed; border-color: #C4D6CB;
+      color: #9DB0A4; background: transparent;
+    }
+    .bill.parked .bill-name, .bill.parked .bill-amt { color: #9DB0A4; }
+    .bill-tag {
+      flex: 0 0 auto;
+      font-size: 11px; font-weight: 600;
+      color: #66756C; background: var(--pale);
+      border-radius: 999px;
+      padding: 3px 8px;
+      white-space: nowrap;
+    }
 
     .empty {
       padding: 18px 14px; font-size: 14px; color: var(--muted);
-      line-height: 1.5;
+      line-height: 1.5; margin: 0;
     }
 
     /* ---------- bewerkstand ---------- */
@@ -236,6 +252,7 @@
       background: transparent; color: var(--pine);
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
+      white-space: nowrap;
     }
     .btn.solid { background: var(--pine); color: #EAF1EA; }
     .btn.ghost { border-color: var(--line); color: var(--muted); }
@@ -258,7 +275,7 @@
       padding: 14px;
     }
     .reset-confirm p { margin: 0 0 12px; font-size: 14px; line-height: 1.5; }
-    .reset-actions { display: flex; gap: 8px; }
+    .reset-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
     .saved {
       font-size: 12px; color: var(--muted);
@@ -280,14 +297,20 @@
     .bk-hint { font-size: 12.5px; color: var(--muted); margin: 0 0 10px; line-height: 1.5; }
     .bk-hint.warn { color: #A23E2C; }
 
-    @media (prefers-reduced-motion: reduce) {
-      #app-root * { transition: none !important; }
+    .credit {
+      margin: 32px 0 0;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      text-align: center;
+      font-size: 11.5px;
+      color: #93A399;
+      letter-spacing: .02em;
     }
   </style>
 
   <div class="hero">
     <p class="hero-label" id="heroLabel">nog te besteden</p>
-    <p class="hero-amount" id="heroAmount">€ 0,00</p>
+    <p class="hero-amount" id="heroAmount">&euro; 0,00</p>
     <p class="hero-sub" id="heroSub"></p>
     <div class="strip">
       <div class="strip-track">
@@ -299,32 +322,29 @@
         <span id="stripEnd"></span>
       </div>
     </div>
+    <p class="hero-updated" id="heroUpdated"></p>
   </div>
 
   <div class="section">
     <div class="section-head">
-      <h2 class="section-title">Saldo op je rekeningen</h2>
+      <h2 class="section-title">Saldo + inkomsten</h2>
     </div>
     <div class="panel">
       <div id="accounts"></div>
       <div class="acc-total">
         <span>Totaal</span>
-        <span id="accTotal">€ 0,00</span>
+        <span id="accTotal">&euro; 0,00</span>
       </div>
     </div>
   </div>
 
+  <div id="lists"></div>
+
   <div class="section">
-    <div class="section-head">
-      <h2 class="section-title">Vaste lasten</h2>
-      <button class="btn ghost" id="editToggle">Bewerken</button>
-    </div>
-    <div class="section-note" id="billNote" style="margin-bottom:10px"></div>
-    <div class="panel" id="bills"></div>
-    <div class="panel" style="margin-top:10px">
-      <div class="totals"><span>Al afgeschreven</span><span id="paidTotal">€ 0,00</span></div>
+    <div class="panel">
+      <div class="totals"><span>Al afgeschreven</span><span id="paidTotal">&euro; 0,00</span></div>
       <div class="totals" style="background:transparent;border-top:1px solid var(--line)">
-        <span>Nog af te schrijven</span><span id="openTotal">€ 0,00</span>
+        <span>Nog af te schrijven</span><span id="openTotal">&euro; 0,00</span>
       </div>
     </div>
   </div>
@@ -332,6 +352,7 @@
   <div class="footer" id="footer"></div>
   <div class="section" id="backup"></div>
   <p class="saved" id="saved"></p>
+  <p class="credit">Created by V. van der Endt &mdash; Sept 2026</p>
 </div>
 
 <script>
@@ -339,14 +360,38 @@
   var KEY = 'maandbudget-v1';
   var SALARY_DAY = 23;
   var ACC_COUNT = 4;
-  var BILL_COUNT = 50;
+
+  var LISTS = [
+    {
+      key: 'bills',
+      count: 75,
+      title: 'Maandelijkse vaste lasten',
+      empty: 'Nog geen maandelijkse lasten. Tik op Bewerken en vul je huur, verzekeringen en abonnementen in — daarna tik je hier elke maand aan wat al is afgeschreven.'
+    },
+    {
+      key: 'periodic',
+      count: 25,
+      tri: true,
+      title: 'Periodieke vaste lasten',
+      empty: 'Nog geen periodieke lasten. Denk aan nota’s per kwartaal of per jaar. Tik een regel aan om te wisselen tussen aan de beurt, afgeschreven en niet aan de beurt.'
+    }
+  ];
+
+  function blankBill() { return { desc: '', amount: '', paid: false, skip: false }; }
+  function blankList(n) { return Array.from({ length: n }, blankBill); }
+  function blankAccounts() {
+    return Array.from({ length: ACC_COUNT }, function () { return { name: '', amount: '' }; });
+  }
 
   var state = {
-    accounts: Array.from({ length: ACC_COUNT }, function () { return { name: '', amount: '' }; }),
-    bills: Array.from({ length: BILL_COUNT }, function () { return { desc: '', amount: '', paid: false }; }),
-    lastReset: null
+    accounts: blankAccounts(),
+    bills: blankList(75),
+    periodic: blankList(25),
+    lastReset: null,
+    lastChange: null
   };
-  var editing = false;
+
+  var editing = { bills: false, periodic: false };
   var confirming = false;
   var backupMode = null;
   var saveTimer = null;
@@ -355,6 +400,8 @@
   var eur0 = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
   var dayMonth = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'long' });
   var dayMonthShort = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'short' });
+  var stampDate = new Intl.DateTimeFormat('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
+  var stampTime = new Intl.DateTimeFormat('nl-NL', { hour: '2-digit', minute: '2-digit' });
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -381,9 +428,7 @@
     }
     var day = 86400000;
     return {
-      today: today,
-      next: next,
-      prev: prev,
+      today: today, next: next, prev: prev,
       daysLeft: Math.round((next - today) / day),
       progress: Math.min(1, Math.max(0, (today - prev) / (next - prev)))
     };
@@ -403,20 +448,20 @@
     try { return window.localStorage.getItem(KEY); } catch (e) { return null; }
   }
 
+  function touch() { state.lastChange = new Date().toISOString(); }
+
   function save(quiet) {
+    /* Meteen wegschrijven: wie de app vlak na een tik sluit, raakt niets kwijt. */
+    var json = JSON.stringify(state);
+    var ok = localSet(json);
+    if (!quiet) flash(ok ? 'Opgeslagen' : 'Opslaan lukte niet');
+
+    if (!window.storage) return;
     clearTimeout(saveTimer);
     saveTimer = setTimeout(function () {
-      var json = JSON.stringify(state);
-      var ok = localSet(json);
-      if (window.storage) {
-        try {
-          window.storage.set(KEY, json).then(function () {
-            if (!quiet) flash('Opgeslagen');
-          })['catch'](function () { if (!ok) flash('Opslaan lukte niet'); });
-          return;
-        } catch (e) { /* val terug op de browser */ }
-      }
-      if (!quiet) flash(ok ? 'Opgeslagen' : 'Opslaan lukte niet');
+      try {
+        window.storage.set(KEY, JSON.stringify(state))['catch'](function () {});
+      } catch (e) { /* de browser heeft het al */ }
     }, 350);
   }
 
@@ -426,10 +471,22 @@
     if (Array.isArray(d.accounts)) {
       for (var i = 0; i < ACC_COUNT; i++) if (d.accounts[i]) state.accounts[i] = d.accounts[i];
     }
-    if (Array.isArray(d.bills)) {
-      for (var j = 0; j < BILL_COUNT; j++) if (d.bills[j]) state.bills[j] = d.bills[j];
-    }
+    LISTS.forEach(function (L) {
+      var src = d[L.key];
+      if (!Array.isArray(src)) return;
+      for (var j = 0; j < L.count; j++) {
+        if (!src[j]) continue;
+        var b = src[j];
+        state[L.key][j] = {
+          desc: typeof b.desc === 'string' ? b.desc : '',
+          amount: b.amount == null ? '' : b.amount,
+          paid: !!b.paid,
+          skip: L.tri ? !!b.skip : false
+        };
+      }
+    });
     state.lastReset = d.lastReset || null;
+    state.lastChange = d.lastChange || null;
     return true;
   }
 
@@ -444,20 +501,42 @@
   }
 
   /* ---------- berekening ---------- */
-  function sums() {
-    var saldo = 0, open = 0, paid = 0, filled = 0, done = 0;
-    state.accounts.forEach(function (a) { saldo += num(a.amount); });
-    state.bills.forEach(function (b) {
+  function listStats(key) {
+    var open = 0, paid = 0, parked = 0, filled = 0, done = 0, active = 0, skipped = 0;
+    state[key].forEach(function (b) {
       var amt = num(b.amount);
-      var used = b.desc.trim() !== '' || amt !== 0;
-      if (!used) return;
+      if (b.desc.trim() === '' && amt === 0) return;
       filled++;
+      if (b.skip) { parked += amt; skipped++; return; }
+      active++;
       if (b.paid) { paid += amt; done++; } else { open += amt; }
     });
-    return { saldo: saldo, open: open, paid: paid, filled: filled, done: done, rest: saldo - open };
+    return {
+      open: open, paid: paid, parked: parked,
+      filled: filled, done: done, active: active, skipped: skipped
+    };
+  }
+
+  function sums() {
+    var saldo = 0, open = 0, paid = 0;
+    state.accounts.forEach(function (a) { saldo += num(a.amount); });
+    LISTS.forEach(function (L) {
+      var s = listStats(L.key);
+      open += s.open; paid += s.paid;
+    });
+    return { saldo: saldo, open: open, paid: paid, rest: saldo - open };
   }
 
   /* ---------- weergave ---------- */
+  function relativeDay(then, today) {
+    var d0 = new Date(then.getFullYear(), then.getMonth(), then.getDate());
+    var diff = Math.round((today - d0) / 86400000);
+    if (diff === 0) return 'vandaag';
+    if (diff === 1) return 'gisteren';
+    if (diff < 7) return diff + ' dagen geleden';
+    return null;
+  }
+
   function renderHero() {
     var s = sums(), p = periodDates();
     $('heroLabel').textContent = 'nog te besteden tot ' + dayMonth.format(p.next);
@@ -478,12 +557,21 @@
     $('stripStart').textContent = dayMonthShort.format(p.prev);
     $('stripEnd').textContent = dayMonthShort.format(p.next);
 
+    var up = $('heroUpdated');
+    if (state.lastChange) {
+      var t = new Date(state.lastChange);
+      var rel = relativeDay(t, p.today);
+      var when = rel
+        ? rel + ' om ' + stampTime.format(t)
+        : stampDate.format(t) + ' om ' + stampTime.format(t);
+      up.innerHTML = 'Laatst bijgewerkt: <b>' + when + '</b>';
+    } else {
+      up.textContent = 'Nog niets ingevuld';
+    }
+
     $('accTotal').textContent = eur.format(s.saldo);
     $('paidTotal').textContent = eur.format(s.paid);
     $('openTotal').textContent = eur.format(s.open);
-    $('billNote').textContent = s.filled === 0
-      ? ''
-      : s.done + ' van ' + s.filled + ' afgeschreven';
   }
 
   function renderAccounts() {
@@ -499,7 +587,9 @@
       name.value = a.name;
       name.placeholder = 'Rekening ' + (i + 1);
       name.setAttribute('aria-label', 'Naam rekening ' + (i + 1));
-      name.addEventListener('input', function () { a.name = name.value; save(true); });
+      name.addEventListener('input', function () {
+        a.name = name.value; touch(); renderHero(); save(true);
+      });
 
       var amt = document.createElement('input');
       amt.className = 'acc-amt';
@@ -508,7 +598,9 @@
       amt.value = a.amount;
       amt.placeholder = '0,00';
       amt.setAttribute('aria-label', 'Saldo rekening ' + (i + 1));
-      amt.addEventListener('input', function () { a.amount = amt.value; renderHero(); save(true); });
+      amt.addEventListener('input', function () {
+        a.amount = amt.value; touch(); renderHero(); save(true);
+      });
       amt.addEventListener('blur', function () {
         if (amt.value.trim() !== '') {
           a.amount = num(amt.value).toFixed(2).replace('.', ',');
@@ -523,12 +615,52 @@
     });
   }
 
-  function renderBills() {
-    var wrap = $('bills');
-    wrap.textContent = '';
+  function renderList(L) {
+    var sec = document.createElement('div');
+    sec.className = 'section';
 
-    if (editing) {
-      state.bills.forEach(function (b, i) {
+    var head = document.createElement('div');
+    head.className = 'section-head';
+    var h = document.createElement('h2');
+    h.className = 'section-title';
+    h.textContent = L.title;
+    var btn = document.createElement('button');
+    btn.className = editing[L.key] ? 'btn' : 'btn ghost';
+    btn.textContent = editing[L.key] ? 'Klaar' : 'Bewerken';
+    btn.addEventListener('click', function () {
+      editing[L.key] = !editing[L.key];
+      var wasEditing = !editing[L.key];
+      renderLists();
+      renderHero();
+      if (wasEditing) save();
+    });
+    head.appendChild(h);
+    head.appendChild(btn);
+    sec.appendChild(head);
+
+    var st = listStats(L.key);
+    if (st.filled > 0 && !editing[L.key]) {
+      var note = document.createElement('p');
+      note.className = 'section-note';
+      if (L.tri) {
+        var parts = [];
+        if (st.active > 0) parts.push(st.done + ' van ' + st.active + ' afgeschreven');
+        else parts.push('niets aan de beurt deze maand');
+        if (st.skipped > 0) {
+          parts.push(st.skipped + ' geparkeerd (' + eur.format(st.parked) + ')');
+        }
+        note.textContent = parts.join(' · ');
+      } else {
+        note.textContent = st.done + ' van ' + st.filled + ' afgeschreven';
+      }
+      sec.appendChild(note);
+    }
+
+    var panel = document.createElement('div');
+    panel.className = 'panel';
+
+    if (editing[L.key]) {
+      state[L.key].forEach(function (b, i) {
         var row = document.createElement('div');
         row.className = 'edit-row';
 
@@ -541,8 +673,8 @@
         desc.type = 'text';
         desc.value = b.desc;
         desc.placeholder = 'Omschrijving';
-        desc.setAttribute('aria-label', 'Omschrijving regel ' + (i + 1));
-        desc.addEventListener('input', function () { b.desc = desc.value; save(true); });
+        desc.setAttribute('aria-label', L.title + ', omschrijving regel ' + (i + 1));
+        desc.addEventListener('input', function () { b.desc = desc.value; touch(); save(true); });
 
         var amt = document.createElement('input');
         amt.className = 'e-amt';
@@ -550,8 +682,8 @@
         amt.inputMode = 'decimal';
         amt.value = b.amount;
         amt.placeholder = '0,00';
-        amt.setAttribute('aria-label', 'Bedrag regel ' + (i + 1));
-        amt.addEventListener('input', function () { b.amount = amt.value; renderHero(); save(true); });
+        amt.setAttribute('aria-label', L.title + ', bedrag regel ' + (i + 1));
+        amt.addEventListener('input', function () { b.amount = amt.value; touch(); renderHero(); save(true); });
         amt.addEventListener('blur', function () {
           if (amt.value.trim() !== '') {
             b.amount = num(amt.value).toFixed(2).replace('.', ',');
@@ -563,51 +695,80 @@
         row.appendChild(n);
         row.appendChild(desc);
         row.appendChild(amt);
-        wrap.appendChild(row);
+        panel.appendChild(row);
       });
-      return;
+      sec.appendChild(panel);
+      return sec;
     }
 
     var any = false;
-    state.bills.forEach(function (b, i) {
+    state[L.key].forEach(function (b, i) {
       if (b.desc.trim() === '' && num(b.amount) === 0) return;
       any = true;
+      var label = b.desc.trim() || 'Regel ' + (i + 1);
       var row = document.createElement('button');
       row.type = 'button';
-      row.className = 'bill' + (b.paid ? ' done' : '');
-      row.setAttribute('aria-pressed', b.paid ? 'true' : 'false');
+      row.className = 'bill' + (b.skip ? ' parked' : (b.paid ? ' done' : ''));
 
       var mark = document.createElement('span');
       mark.className = 'mark';
-      mark.textContent = '✓';
+      mark.textContent = b.skip ? '–' : '✓';
 
       var name = document.createElement('span');
       name.className = 'bill-name';
-      name.textContent = b.desc.trim() || 'Regel ' + (i + 1);
+      name.textContent = label;
 
       var amt = document.createElement('span');
       amt.className = 'bill-amt';
       amt.textContent = eur.format(num(b.amount));
 
+      var statusText = b.skip
+        ? 'niet aan de beurt deze maand'
+        : (b.paid ? 'afgeschreven' : 'nog af te schrijven');
+      row.setAttribute('aria-label', label + ' — ' + statusText);
+
       row.appendChild(mark);
       row.appendChild(name);
+      if (L.tri && b.skip) {
+        var tag = document.createElement('span');
+        tag.className = 'bill-tag';
+        tag.textContent = 'niet deze maand';
+        row.appendChild(tag);
+      }
       row.appendChild(amt);
+
       row.addEventListener('click', function () {
-        b.paid = !b.paid;
-        row.classList.toggle('done', b.paid);
-        row.setAttribute('aria-pressed', b.paid ? 'true' : 'false');
+        if (L.tri) {
+          /* aan de beurt -> afgeschreven -> niet aan de beurt -> aan de beurt */
+          if (b.skip) { b.skip = false; b.paid = false; }
+          else if (!b.paid) { b.paid = true; }
+          else { b.paid = false; b.skip = true; }
+        } else {
+          b.paid = !b.paid;
+        }
+        touch();
         renderHero();
+        renderLists();
         save(true);
       });
-      wrap.appendChild(row);
+      panel.appendChild(row);
     });
 
     if (!any) {
       var e = document.createElement('p');
       e.className = 'empty';
-      e.textContent = 'Nog geen vaste lasten. Tik op Bewerken en vul je huur, verzekeringen en abonnementen in — daarna tik je hier elke maand aan wat al is afgeschreven.';
-      wrap.appendChild(e);
+      e.textContent = L.empty;
+      panel.appendChild(e);
     }
+
+    sec.appendChild(panel);
+    return sec;
+  }
+
+  function renderLists() {
+    var c = $('lists');
+    c.textContent = '';
+    LISTS.forEach(function (L) { c.appendChild(renderList(L)); });
   }
 
   function renderFooter() {
@@ -636,8 +797,8 @@
 
     var box = document.createElement('div');
     box.className = 'reset-confirm';
-    var p = document.createElement('p');
-    p.textContent = 'Alle vinkjes worden gewist, zodat je de maand opnieuw kunt aftikken. Je omschrijvingen, bedragen en saldi blijven staan.';
+    var p2 = document.createElement('p');
+    p2.textContent = 'De maandelijkse lasten gaan terug naar nog af te schrijven. De periodieke lasten gaan naar niet aan de beurt — tik de nota’s aan die deze maand wel komen. Omschrijvingen, bedragen en saldi blijven staan.';
     var acts = document.createElement('div');
     acts.className = 'reset-actions';
 
@@ -645,8 +806,15 @@
     yes.className = 'btn solid';
     yes.textContent = 'Vinkjes wissen';
     yes.addEventListener('click', function () {
-      state.bills.forEach(function (b) { b.paid = false; });
+      LISTS.forEach(function (L) {
+        state[L.key].forEach(function (b) {
+          b.paid = false;
+          /* Periodieke nota's beginnen de maand geparkeerd: je tikt aan wat wel komt. */
+          if (L.tri) b.skip = (b.desc.trim() !== '' || num(b.amount) !== 0);
+        });
+      });
       state.lastReset = new Date().toISOString();
+      touch();
       confirming = false;
       renderAll();
       save();
@@ -660,7 +828,7 @@
 
     acts.appendChild(yes);
     acts.appendChild(no);
-    box.appendChild(p);
+    box.appendChild(p2);
     box.appendChild(acts);
     f.appendChild(box);
   }
@@ -679,8 +847,7 @@
 
     var note = document.createElement('p');
     note.className = 'section-note';
-    note.style.margin = '0 0 10px';
-    note.textContent = 'Bewaar je gegevens als tekst in je notities. Daarmee zet je alles terug op een nieuwe telefoon of na het opschonen van je browser.';
+    note.textContent = 'Bewaar je gegevens als tekst in je Notities-app. Daarmee zet je alles terug op een nieuwe telefoon of na het opschonen van je browser.';
     c.appendChild(note);
 
     var panel = document.createElement('div');
@@ -690,7 +857,7 @@
     if (backupMode === 'export') {
       var hint = document.createElement('p');
       hint.className = 'bk-hint';
-      hint.textContent = 'Selecteer de hele tekst en kopieer hem naar een notitie. Deel deze tekst met niemand: je bedragen staan erin.';
+      hint.textContent = 'Selecteer de hele tekst en kopieer hem naar je Notities-app. Deel deze tekst met niemand: je bedragen staan erin.';
       var ta = document.createElement('textarea');
       ta.className = 'bk-text';
       ta.rows = 5;
@@ -750,18 +917,16 @@
         if (!txt) { err.textContent = 'Er is nog niets geplakt.'; err.style.display = 'block'; return; }
         var d;
         try { d = JSON.parse(txt); } catch (e) { d = null; }
-        if (!d || (!Array.isArray(d.accounts) && !Array.isArray(d.bills))) {
+        if (!d || (!Array.isArray(d.accounts) && !Array.isArray(d.bills) && !Array.isArray(d.periodic))) {
           err.textContent = 'Deze tekst is geen geldige back-up. Plak de hele tekst, inclusief de accolades aan begin en eind.';
           err.style.display = 'block';
           return;
         }
-        state.accounts = Array.from({ length: ACC_COUNT }, function () { return { name: '', amount: '' }; });
-        state.bills = Array.from({ length: BILL_COUNT }, function () { return { desc: '', amount: '', paid: false }; });
+        state.accounts = blankAccounts();
+        LISTS.forEach(function (L) { state[L.key] = blankList(L.count); });
         apply(txt);
         backupMode = null;
-        editing = false;
-        $('editToggle').textContent = 'Bewerken';
-        $('editToggle').className = 'btn ghost';
+        editing = { bills: false, periodic: false };
         renderAll();
         save();
         flash('Back-up teruggezet');
@@ -779,8 +944,8 @@
       panel.appendChild(iActs);
 
     } else {
-      var acts = document.createElement('div');
-      acts.className = 'reset-actions';
+      var acts2 = document.createElement('div');
+      acts2.className = 'reset-actions';
       var out = document.createElement('button');
       out.className = 'btn';
       out.textContent = 'Back-up maken';
@@ -789,9 +954,9 @@
       inn.className = 'btn ghost';
       inn.textContent = 'Back-up terugzetten';
       inn.addEventListener('click', function () { backupMode = 'import'; renderBackup(); });
-      acts.appendChild(out);
-      acts.appendChild(inn);
-      panel.appendChild(acts);
+      acts2.appendChild(out);
+      acts2.appendChild(inn);
+      panel.appendChild(acts2);
     }
 
     c.appendChild(panel);
@@ -800,23 +965,13 @@
   function renderAll() {
     renderHero();
     renderAccounts();
-    renderBills();
+    renderLists();
     renderFooter();
     renderBackup();
   }
 
-  $('editToggle').addEventListener('click', function () {
-    editing = !editing;
-    $('editToggle').textContent = editing ? 'Klaar' : 'Bewerken';
-    $('editToggle').className = editing ? 'btn' : 'btn ghost';
-    renderBills();
-    renderHero();
-    if (!editing) save();
-  });
-
   load().then(renderAll)['catch'](renderAll);
 })();
 </script>
-
 </body>
 </html>
