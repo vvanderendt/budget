@@ -242,6 +242,66 @@
       font-variant-numeric: tabular-nums; font-weight: 600;
     }
     .edit-row input::placeholder { color: #B5C4BA; font-weight: 400; }
+    .edit-row .e-amt { flex: 0 0 82px; }
+    .moves { flex: 0 0 auto; display: flex; gap: 4px; }
+    .move {
+      width: 28px; height: 30px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--card);
+      color: var(--pine);
+      font: inherit; font-size: 13px; line-height: 1;
+      display: grid; place-items: center;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .move:active { background: var(--pale); }
+    .move:disabled { color: #CBD6CE; cursor: default; }
+
+    /* ---------- verwachte posten ---------- */
+    .bill.exp { padding: 0; gap: 0; cursor: default; }
+    .bill.exp:active { background: transparent; }
+    .bill-body {
+      display: flex; align-items: center; gap: 11px;
+      flex: 1 1 auto; min-width: 0;
+      padding: 11px 4px 11px 12px;
+      border: 0; background: transparent;
+      font: inherit; text-align: left; color: var(--ink);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .bill-body:active { background: var(--pale); }
+    .bill.exp .mark {
+      color: var(--ink); font-size: 14px; font-weight: 600;
+      border-color: #C4D6CB;
+    }
+    .bill.exp .bill-body.income .mark { color: #1E6B4A; border-color: #9CC4AE; }
+    .bill.exp.parked .bill-name, .bill.exp.parked .bill-amt { color: #9DB0A4; }
+    .bill.exp.parked .mark,
+    .bill.exp.parked .bill-body.income .mark {
+      border-style: dashed; border-color: #C4D6CB;
+      color: #9DB0A4; background: transparent;
+    }
+    .bill-amt.plus { color: #1E6B4A; }
+    .exp-done {
+      flex: 0 0 auto;
+      width: 42px; align-self: stretch;
+      border: 0; border-left: 1px solid var(--line);
+      background: transparent;
+      color: var(--pine);
+      font: inherit; font-size: 15px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .exp-done:active { background: var(--pale); }
+    .undo {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; margin-top: 8px;
+      padding: 9px 12px;
+      background: var(--pale);
+      border-radius: 10px;
+      font-size: 13px; color: var(--muted);
+    }
 
     /* ---------- knoppen ---------- */
     .btn {
@@ -346,6 +406,9 @@
       <div class="totals" style="background:transparent;border-top:1px solid var(--line)">
         <span>Nog af te schrijven</span><span id="openTotal">&euro; 0,00</span>
       </div>
+      <div class="totals" id="expectedRow" style="background:transparent;border-top:1px solid var(--line);display:none">
+        <span>Te verwachten, per saldo</span><span id="expectedTotal">&euro; 0,00</span>
+      </div>
     </div>
   </div>
 
@@ -374,6 +437,14 @@
       tri: true,
       title: 'Periodieke vaste lasten',
       empty: 'Nog geen periodieke lasten. Denk aan nota’s per kwartaal of per jaar. Tik een regel aan om te wisselen tussen aan de beurt, afgeschreven en niet aan de beurt.'
+    },
+    {
+      key: 'expected',
+      count: 10,
+      tri: true,
+      signed: true,
+      title: 'Te verwachten posten',
+      empty: 'Nog geen verwachte posten. Dit zijn eenmalige bedragen: zet een min ervoor voor een uitgave, laat de min weg voor inkomsten. Tik op het vinkje rechts zodra een post verwerkt is — de regel verdwijnt dan.'
     }
   ];
 
@@ -387,11 +458,13 @@
     accounts: blankAccounts(),
     bills: blankList(75),
     periodic: blankList(25),
+    expected: blankList(10),
     lastReset: null,
     lastChange: null
   };
 
-  var editing = { bills: false, periodic: false };
+  var editing = { bills: false, periodic: false, expected: false };
+  var lastRemoved = null;
   var confirming = false;
   var backupMode = null;
   var saveTimer = null;
@@ -518,16 +591,28 @@
   }
 
   function sums() {
-    var saldo = 0, open = 0, paid = 0;
+    var saldo = 0, open = 0, paid = 0, expected = 0;
     state.accounts.forEach(function (a) { saldo += num(a.amount); });
     LISTS.forEach(function (L) {
       var s = listStats(L.key);
-      open += s.open; paid += s.paid;
+      if (L.signed) {
+        /* Ondertekende posten tellen zoals ze staan: plus is inkomsten, min is kosten. */
+        expected += s.open;
+      } else {
+        open += s.open; paid += s.paid;
+      }
     });
-    return { saldo: saldo, open: open, paid: paid, rest: saldo - open };
+    return {
+      saldo: saldo, open: open, paid: paid, expected: expected,
+      rest: saldo - open + expected
+    };
   }
 
   /* ---------- weergave ---------- */
+  function signedEur(v) {
+    return (v > 0 ? '+ ' : (v < 0 ? '− ' : '')) + eur.format(Math.abs(v));
+  }
+
   function relativeDay(then, today) {
     var d0 = new Date(then.getFullYear(), then.getMonth(), then.getDate());
     var diff = Math.round((today - d0) / 86400000);
@@ -572,6 +657,14 @@
     $('accTotal').textContent = eur.format(s.saldo);
     $('paidTotal').textContent = eur.format(s.paid);
     $('openTotal').textContent = eur.format(s.open);
+
+    var expRow = $('expectedRow');
+    if (listStats('expected').active > 0) {
+      $('expectedTotal').textContent = signedEur(s.expected);
+      expRow.style.display = '';
+    } else {
+      expRow.style.display = 'none';
+    }
   }
 
   function renderAccounts() {
@@ -615,6 +708,30 @@
     });
   }
 
+  function moveButton(L, i, dir) {
+    var rows = state[L.key];
+    var target = i + dir;
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'move';
+    b.textContent = dir < 0 ? '↑' : '↓';
+    b.setAttribute('aria-label', 'Regel ' + (i + 1) + (dir < 0 ? ' omhoog' : ' omlaag'));
+    if (target < 0 || target >= rows.length) {
+      b.disabled = true;
+      return b;
+    }
+    b.addEventListener('click', function () {
+      var tmp = rows[i];
+      rows[i] = rows[target];
+      rows[target] = tmp;
+      touch();
+      renderLists();
+      renderHero();
+      save(true);
+    });
+    return b;
+  }
+
   function renderList(L) {
     var sec = document.createElement('div');
     sec.className = 'section';
@@ -642,8 +759,15 @@
     if (st.filled > 0 && !editing[L.key]) {
       var note = document.createElement('p');
       note.className = 'section-note';
-      if (L.tri) {
-        var parts = [];
+      var parts = [];
+      if (L.signed) {
+        if (st.active > 0) parts.push(st.active + ' verwacht (' + signedEur(st.open) + ')');
+        else parts.push('niets verwacht deze maand');
+        if (st.skipped > 0) {
+          parts.push(st.skipped + ' geparkeerd (' + signedEur(st.parked) + ')');
+        }
+        note.textContent = parts.join(' · ');
+      } else if (L.tri) {
         if (st.active > 0) parts.push(st.done + ' van ' + st.active + ' afgeschreven');
         else parts.push('niets aan de beurt deze maand');
         if (st.skipped > 0) {
@@ -692,9 +816,15 @@
           }
         });
 
+        var moves = document.createElement('span');
+        moves.className = 'moves';
+        moves.appendChild(moveButton(L, i, -1));
+        moves.appendChild(moveButton(L, i, 1));
+
         row.appendChild(n);
         row.appendChild(desc);
         row.appendChild(amt);
+        row.appendChild(moves);
         panel.appendChild(row);
       });
       sec.appendChild(panel);
@@ -706,39 +836,53 @@
       if (b.desc.trim() === '' && num(b.amount) === 0) return;
       any = true;
       var label = b.desc.trim() || 'Regel ' + (i + 1);
-      var row = document.createElement('button');
-      row.type = 'button';
-      row.className = 'bill' + (b.skip ? ' parked' : (b.paid ? ' done' : ''));
+      var value = num(b.amount);
+
+      var body = document.createElement('button');
+      body.type = 'button';
+      body.className = L.signed
+        ? ('bill-body' + (value > 0 ? ' income' : ''))
+        : 'bill';
 
       var mark = document.createElement('span');
       mark.className = 'mark';
-      mark.textContent = b.skip ? '–' : '✓';
+      if (b.skip) mark.textContent = '–';
+      else if (L.signed) mark.textContent = value < 0 ? '−' : '+';
+      else mark.textContent = '✓';
 
       var name = document.createElement('span');
       name.className = 'bill-name';
       name.textContent = label;
 
       var amt = document.createElement('span');
-      amt.className = 'bill-amt';
-      amt.textContent = eur.format(num(b.amount));
+      amt.className = 'bill-amt' + (L.signed && value > 0 ? ' plus' : '');
+      amt.textContent = L.signed ? signedEur(value) : eur.format(value);
 
-      var statusText = b.skip
-        ? 'niet aan de beurt deze maand'
-        : (b.paid ? 'afgeschreven' : 'nog af te schrijven');
-      row.setAttribute('aria-label', label + ' — ' + statusText);
-
-      row.appendChild(mark);
-      row.appendChild(name);
-      if (L.tri && b.skip) {
+      body.appendChild(mark);
+      body.appendChild(name);
+      if (L.tri && b.skip && !L.signed) {
         var tag = document.createElement('span');
         tag.className = 'bill-tag';
         tag.textContent = 'niet deze maand';
-        row.appendChild(tag);
+        body.appendChild(tag);
       }
-      row.appendChild(amt);
+      body.appendChild(amt);
 
-      row.addEventListener('click', function () {
-        if (L.tri) {
+      var statusText;
+      if (L.signed) {
+        statusText = b.skip ? 'niet deze maand' : 'verwacht';
+      } else {
+        statusText = b.skip
+          ? 'niet aan de beurt deze maand'
+          : (b.paid ? 'afgeschreven' : 'nog af te schrijven');
+      }
+      body.setAttribute('aria-label', label + ' — ' + statusText);
+
+      body.addEventListener('click', function () {
+        if (L.signed) {
+          b.skip = !b.skip;
+          b.paid = false;
+        } else if (L.tri) {
           /* aan de beurt -> afgeschreven -> niet aan de beurt -> aan de beurt */
           if (b.skip) { b.skip = false; b.paid = false; }
           else if (!b.paid) { b.paid = true; }
@@ -751,6 +895,31 @@
         renderLists();
         save(true);
       });
+
+      if (!L.signed) {
+        panel.appendChild(body);
+        return;
+      }
+
+      /* Verwachte posten: aparte vinkknop die de regel opruimt. */
+      var row = document.createElement('div');
+      row.className = 'bill exp' + (b.skip ? ' parked' : '');
+      var done = document.createElement('button');
+      done.type = 'button';
+      done.className = 'exp-done';
+      done.textContent = '✓';
+      done.title = 'Verwerkt — regel verwijderen';
+      done.setAttribute('aria-label', label + ' is verwerkt, regel verwijderen');
+      done.addEventListener('click', function () {
+        lastRemoved = { key: L.key, index: i, bill: b, label: label };
+        state[L.key][i] = blankBill();
+        touch();
+        renderHero();
+        renderLists();
+        save(true);
+      });
+      row.appendChild(body);
+      row.appendChild(done);
       panel.appendChild(row);
     });
 
@@ -762,6 +931,29 @@
     }
 
     sec.appendChild(panel);
+
+    if (!editing[L.key] && lastRemoved && lastRemoved.key === L.key) {
+      var undo = document.createElement('div');
+      undo.className = 'undo';
+      var txt = document.createElement('span');
+      txt.textContent = lastRemoved.label + ' verwerkt';
+      var ub = document.createElement('button');
+      ub.type = 'button';
+      ub.className = 'btn ghost';
+      ub.textContent = 'Ongedaan maken';
+      ub.addEventListener('click', function () {
+        state[lastRemoved.key][lastRemoved.index] = lastRemoved.bill;
+        lastRemoved = null;
+        touch();
+        renderHero();
+        renderLists();
+        save(true);
+      });
+      undo.appendChild(txt);
+      undo.appendChild(ub);
+      sec.appendChild(undo);
+    }
+
     return sec;
   }
 
@@ -807,12 +999,15 @@
     yes.textContent = 'Vinkjes wissen';
     yes.addEventListener('click', function () {
       LISTS.forEach(function (L) {
+        /* Verwachte posten zijn eenmalig en volgen hun eigen tijdpad: die blijven staan. */
+        if (L.signed) return;
         state[L.key].forEach(function (b) {
           b.paid = false;
           /* Periodieke nota's beginnen de maand geparkeerd: je tikt aan wat wel komt. */
           if (L.tri) b.skip = (b.desc.trim() !== '' || num(b.amount) !== 0);
         });
       });
+      lastRemoved = null;
       state.lastReset = new Date().toISOString();
       touch();
       confirming = false;
@@ -926,7 +1121,8 @@
         LISTS.forEach(function (L) { state[L.key] = blankList(L.count); });
         apply(txt);
         backupMode = null;
-        editing = { bills: false, periodic: false };
+        editing = { bills: false, periodic: false, expected: false };
+        lastRemoved = null;
         renderAll();
         save();
         flash('Back-up teruggezet');
