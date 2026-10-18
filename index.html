@@ -9,6 +9,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Budget">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
 <title>Maandbudget</title>
 <style>
   html { background: #F1F8F4; }
@@ -428,11 +430,12 @@
   <div class="footer" id="footer"></div>
   <div class="section" id="backup"></div>
   <p class="saved" id="saved"></p>
-  <p class="credit">Created by V. van der Endt &mdash; Sept 2026</p>
+  <p class="credit">Created by V. van der Endt &mdash; Sept 2026 &middot; <span id="versie"></span></p>
 </div>
 
 <script>
 (function () {
+  var VERSIE = 'v1.5';
   var KEY = 'maandbudget-v1';
   var SALARY_DAY = 23;
   var ACC_COUNT = 4;
@@ -1260,6 +1263,7 @@
     renderBackup();
   }
 
+  $('versie').textContent = VERSIE;
   load().then(renderAll)['catch'](renderAll);
 })();
 </script>
