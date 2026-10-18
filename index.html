@@ -244,6 +244,19 @@
     .edit-row input::placeholder { color: #B5C4BA; font-weight: 400; }
     .edit-row .e-amt { flex: 0 0 82px; }
     .moves { flex: 0 0 auto; display: flex; gap: 4px; }
+    .sign {
+      flex: 0 0 26px; height: 30px;
+      border: 1px solid #C4D6CB;
+      border-radius: 7px;
+      background: var(--card);
+      color: var(--ink);
+      font: inherit; font-size: 15px; font-weight: 600; line-height: 1;
+      display: grid; place-items: center;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .sign.income { color: #1E6B4A; border-color: #9CC4AE; }
+    .sign:active { background: var(--pale); }
     .move {
       width: 28px; height: 30px;
       border: 1px solid var(--line);
@@ -370,7 +383,7 @@
 
   <div class="hero">
     <p class="hero-label" id="heroLabel">nog te besteden</p>
-    <p class="hero-amount" id="heroAmount">&euro; 0,00</p>
+    <p class="hero-amount" id="heroAmount">&euro; 0</p>
     <p class="hero-sub" id="heroSub"></p>
     <div class="strip">
       <div class="strip-track">
@@ -393,7 +406,7 @@
       <div id="accounts"></div>
       <div class="acc-total">
         <span>Totaal</span>
-        <span id="accTotal">&euro; 0,00</span>
+        <span id="accTotal">&euro; 0</span>
       </div>
     </div>
   </div>
@@ -402,12 +415,12 @@
 
   <div class="section">
     <div class="panel">
-      <div class="totals"><span>Al afgeschreven</span><span id="paidTotal">&euro; 0,00</span></div>
+      <div class="totals"><span>Al afgeschreven</span><span id="paidTotal">&euro; 0</span></div>
       <div class="totals" style="background:transparent;border-top:1px solid var(--line)">
-        <span>Nog af te schrijven</span><span id="openTotal">&euro; 0,00</span>
+        <span>Nog af te schrijven</span><span id="openTotal">&euro; 0</span>
       </div>
       <div class="totals" id="expectedRow" style="background:transparent;border-top:1px solid var(--line);display:none">
-        <span>Te verwachten, per saldo</span><span id="expectedTotal">&euro; 0,00</span>
+        <span>Te verwachten, per saldo</span><span id="expectedTotal">&euro; 0</span>
       </div>
     </div>
   </div>
@@ -448,7 +461,42 @@
     }
   ];
 
-  function blankBill() { return { desc: '', amount: '', paid: false, skip: false }; }
+  function blankBill() { return { desc: '', amount: '', paid: false, skip: false, neg: false }; }
+
+  /* Bedragvelden: cijfers, en een komma of punt wordt bij verlaten afgerond.
+     Een scheidingsteken wegfilteren tijdens het typen zou 312,40 tot 31240 maken. */
+  function cleanTyping(s) { return String(s == null ? '' : s).replace(/[^0-9.,]/g, ''); }
+  function toWhole(s) {
+    var t = cleanTyping(s);
+    if (t === '') return '';
+    return String(Math.round(num(t)));
+  }
+
+  function bindAmountField(el, onValue) {
+    el.type = 'text';
+    el.inputMode = 'numeric';
+    el.addEventListener('input', function () {
+      var old = el.value;
+      var next = cleanTyping(old);
+      if (next !== old) {
+        var pos = el.selectionStart == null ? next.length : el.selectionStart;
+        var weg = 0;
+        for (var k = 0; k < pos && k < old.length; k++) {
+          if (!/[0-9.,]/.test(old.charAt(k))) weg++;
+        }
+        el.value = next;
+        var np = Math.max(0, Math.min(next.length, pos - weg));
+        try { el.setSelectionRange(np, np); } catch (e) {}
+      }
+      onValue(next);
+    });
+    el.addEventListener('blur', function () {
+      var whole = toWhole(el.value);
+      el.value = whole;
+      onValue(whole);
+      save(true);
+    });
+  }
   function blankList(n) { return Array.from({ length: n }, blankBill); }
   function blankAccounts() {
     return Array.from({ length: ACC_COUNT }, function () { return { name: '', amount: '' }; });
@@ -469,8 +517,12 @@
   var backupMode = null;
   var saveTimer = null;
 
-  var eur = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' });
-  var eur0 = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+  /* Alles in hele euro's: bedragen worden bij invoer al afgerond, dus lijst en totaal tellen op. */
+  var eur = new Intl.NumberFormat('nl-NL', {
+    style: 'currency', currency: 'EUR',
+    minimumFractionDigits: 0, maximumFractionDigits: 0
+  });
+  var eur0 = eur;
   var dayMonth = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'long' });
   var dayMonthShort = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'short' });
   var stampDate = new Intl.DateTimeFormat('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -538,11 +590,23 @@
     }, 350);
   }
 
+  /* Oudere gegevens kunnen nog centen bevatten: die worden eenmalig afgerond. */
+  function round0(v) {
+    if (v == null || String(v).trim() === '') return '';
+    return String(Math.round(num(v)));
+  }
+
   function apply(json) {
     if (!json) return false;
     var d = JSON.parse(json);
     if (Array.isArray(d.accounts)) {
-      for (var i = 0; i < ACC_COUNT; i++) if (d.accounts[i]) state.accounts[i] = d.accounts[i];
+      for (var i = 0; i < ACC_COUNT; i++) {
+        if (!d.accounts[i]) continue;
+        state.accounts[i] = {
+          name: typeof d.accounts[i].name === 'string' ? d.accounts[i].name : '',
+          amount: round0(d.accounts[i].amount)
+        };
+      }
     }
     LISTS.forEach(function (L) {
       var src = d[L.key];
@@ -550,11 +614,15 @@
       for (var j = 0; j < L.count; j++) {
         if (!src[j]) continue;
         var b = src[j];
+        /* Oudere gegevens hielden het minteken in het bedrag zelf. */
+        var raw = round0(b.amount);
+        var neg = L.signed && (!!b.neg || raw.charAt(0) === '-');
         state[L.key][j] = {
           desc: typeof b.desc === 'string' ? b.desc : '',
-          amount: b.amount == null ? '' : b.amount,
+          amount: raw.replace('-', ''),
           paid: !!b.paid,
-          skip: L.tri ? !!b.skip : false
+          skip: L.tri ? !!b.skip : false,
+          neg: neg
         };
       }
     });
@@ -574,10 +642,21 @@
   }
 
   /* ---------- berekening ---------- */
+  function cfg(key) {
+    for (var i = 0; i < LISTS.length; i++) if (LISTS[i].key === key) return LISTS[i];
+    return {};
+  }
+
+  /* Bedragen staan altijd positief opgeslagen; alleen verwachte posten kennen een teken. */
+  function billValue(key, b) {
+    var v = num(b.amount);
+    return (cfg(key).signed && b.neg) ? -v : v;
+  }
+
   function listStats(key) {
     var open = 0, paid = 0, parked = 0, filled = 0, done = 0, active = 0, skipped = 0;
     state[key].forEach(function (b) {
-      var amt = num(b.amount);
+      var amt = billValue(key, b);
       if (b.desc.trim() === '' && amt === 0) return;
       filled++;
       if (b.skip) { parked += amt; skipped++; return; }
@@ -686,21 +765,10 @@
 
       var amt = document.createElement('input');
       amt.className = 'acc-amt';
-      amt.type = 'text';
-      amt.inputMode = 'decimal';
       amt.value = a.amount;
-      amt.placeholder = '0,00';
+      amt.placeholder = '0';
       amt.setAttribute('aria-label', 'Saldo rekening ' + (i + 1));
-      amt.addEventListener('input', function () {
-        a.amount = amt.value; touch(); renderHero(); save(true);
-      });
-      amt.addEventListener('blur', function () {
-        if (amt.value.trim() !== '') {
-          a.amount = num(amt.value).toFixed(2).replace('.', ',');
-          amt.value = a.amount;
-          save(true);
-        }
-      });
+      bindAmountField(amt, function (v) { a.amount = v; touch(); renderHero(); });
 
       row.appendChild(name);
       row.appendChild(amt);
@@ -802,26 +870,38 @@
 
         var amt = document.createElement('input');
         amt.className = 'e-amt';
-        amt.type = 'text';
-        amt.inputMode = 'decimal';
         amt.value = b.amount;
-        amt.placeholder = '0,00';
+        amt.placeholder = '0';
         amt.setAttribute('aria-label', L.title + ', bedrag regel ' + (i + 1));
-        amt.addEventListener('input', function () { b.amount = amt.value; touch(); renderHero(); save(true); });
-        amt.addEventListener('blur', function () {
-          if (amt.value.trim() !== '') {
-            b.amount = num(amt.value).toFixed(2).replace('.', ',');
-            amt.value = b.amount;
-            save(true);
-          }
-        });
+        bindAmountField(amt, function (v) { b.amount = v; touch(); renderHero(); });
 
         var moves = document.createElement('span');
         moves.className = 'moves';
         moves.appendChild(moveButton(L, i, -1));
         moves.appendChild(moveButton(L, i, 1));
 
-        row.appendChild(n);
+        if (L.signed) {
+          /* Teken via een knop: het cijfertoetsenbord van een telefoon heeft geen min. */
+          var sign = document.createElement('button');
+          sign.type = 'button';
+          var paintSign = function () {
+            sign.textContent = b.neg ? '−' : '+';
+            sign.className = 'sign' + (b.neg ? '' : ' income');
+            sign.setAttribute('aria-label', 'Regel ' + (i + 1) + ' is nu een '
+              + (b.neg ? 'uitgave' : 'inkomst') + ', tik om te wisselen');
+          };
+          paintSign();
+          sign.addEventListener('click', function () {
+            b.neg = !b.neg;
+            paintSign();
+            touch();
+            renderHero();
+            save(true);
+          });
+          row.appendChild(sign);
+        } else {
+          row.appendChild(n);
+        }
         row.appendChild(desc);
         row.appendChild(amt);
         row.appendChild(moves);
@@ -836,13 +916,14 @@
       if (b.desc.trim() === '' && num(b.amount) === 0) return;
       any = true;
       var label = b.desc.trim() || 'Regel ' + (i + 1);
-      var value = num(b.amount);
+      var value = billValue(L.key, b);
 
       var body = document.createElement('button');
       body.type = 'button';
+      var stateCls = b.skip ? ' parked' : (b.paid ? ' done' : '');
       body.className = L.signed
         ? ('bill-body' + (value > 0 ? ' income' : ''))
-        : 'bill';
+        : ('bill' + stateCls);
 
       var mark = document.createElement('span');
       mark.className = 'mark';
@@ -942,7 +1023,20 @@
       ub.className = 'btn ghost';
       ub.textContent = 'Ongedaan maken';
       ub.addEventListener('click', function () {
-        state[lastRemoved.key][lastRemoved.index] = lastRemoved.bill;
+        var rows = state[lastRemoved.key];
+        var slot = lastRemoved.index;
+        /* Is de oude plek intussen gevuld, zoek dan de eerste vrije regel. */
+        if (rows[slot].desc.trim() !== '' || num(rows[slot].amount) !== 0) {
+          slot = -1;
+          for (var k = 0; k < rows.length; k++) {
+            if (rows[k].desc.trim() === '' && num(rows[k].amount) === 0) { slot = k; break; }
+          }
+        }
+        if (slot < 0) {
+          flash('Geen vrije regel meer');
+          return;
+        }
+        rows[slot] = lastRemoved.bill;
         lastRemoved = null;
         touch();
         renderHero();
